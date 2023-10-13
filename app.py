@@ -9,12 +9,6 @@ import CardController
 def params():
     return request.args
   
-@app.route("/card")
-def card():
-  try:
-    new_card = 
-
-
 @app.route("/register/card")
 def register_card():
   try:
@@ -27,4 +21,6 @@ def register_card():
     payment_day = request.args["payment_day"]
     monthly_fee = request.args["monthly_fee"]
     interest_rate = request.args["interest_rate"]
+except:
+    
     
