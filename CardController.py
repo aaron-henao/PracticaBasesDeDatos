@@ -4,6 +4,7 @@ from psycopg2 import sql
 from datetime import datetime, timedelta
 import SecretConfig
 
+
 MAX_INTEREST = 100/12
 
 class ExcesiveInterestException( Exception ): 
@@ -45,7 +46,7 @@ def create_tables():
     try:
          cursor = ObtenerCursor()
          create_credit_card_table = sql.SQL('''CREATE TABLE IF NOT EXISTS credit_card (
-             card_number VARCHAR(16) PRIMARY KEY,
+             card_number VARCHAR(16),
              owner_id VARCHAR(10),
              owner_name VARCHAR(255),
               bank_name VARCHAR(255),
@@ -57,7 +58,7 @@ def create_tables():
             )''')
 
          create_payment_plan = sql.SQL('''create table payment_plan(
-            card_number varchar(20) not null PRIMARY KEY,
+            card_number varchar(20) not null,
             purchase_date date not null,
             purchase_amount float not null,
             payment_day int not null,
@@ -211,6 +212,7 @@ def calculate_payment(purchase_amount: float, card: dict, num_installments: int)
     except Exception as e:
         return str(e) 
 
+
 def make_purchase(purchase_amount: float, interest_rate: float, monthly_payment: float):
     """
         Shows the number of months for scheduled savings
@@ -250,6 +252,40 @@ def make_purchase(purchase_amount: float, interest_rate: float, monthly_payment:
     except Exception as e:
         return str(e)
 
+def calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date):
+    try:
+        cursor = ObtenerCursor()
+
+        monthly_payment = calculate_fee_payment(purchase_amount, interest_rate, num_installments)
+
+        # Calcula las fechas de pago
+        payment_dates = []
+        payment_date = datetime.strptime(purchase_date, '%Y-%m-%d')
+        for _ in range(num_installments):
+            payment_dates.append(payment_date.strftime('%Y-%m-%d'))
+            payment_date += timedelta(months=1)
+
+        # Calcula los montos de interés y capital
+        balance = purchase_amount
+        interest_amounts = []
+        capital_amounts = []
+        for _ in range(num_installments):
+            interest_amount = balance * (interest_rate / 100 / 12)
+            capital_amount = monthly_payment - interest_amount
+            interest_amounts.append(interest_amount)
+            capital_amounts.append(capital_amount)
+            balance -= capital_amount
+
+        # Inserta la información en la tabla payment_plan
+        for i in range(num_installments):
+            cursor.execute("INSERT INTO payment_plan (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amount, capital_amount, balance) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                           (card_number, purchase_date, purchase_amount, i + 1, monthly_payment, interest_amounts[i], capital_amounts[i], balance))
+
+        return monthly_payment, capital_amounts, interest_amounts
+
+    except Exception as e:
+        return None, None, None
+    
 def get_monthly_payments_report(card_number: int, start_date: date , end_date: date):
         """
             Gets the payment report according to the indicated date

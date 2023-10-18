@@ -1,5 +1,5 @@
 create table credit_card(
-    card_number varchar(20) not null PRIMARY KEY ,
+    card_number varchar(20) not null,
     owner_id varchar (40) not null,
     owner_name varchar (40) not null,
     bank_name varchar (60)not null,
@@ -13,7 +13,7 @@ create table credit_card(
 );
 
 create table payment_plan(
-    card_number varchar(20) not null PRIMARY KEY,
+    card_number varchar(20) not null,
     purchase_date date not null,
     purchase_amount float not null,
     payment_day int not null,

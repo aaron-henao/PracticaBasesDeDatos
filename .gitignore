@@ -1,5 +1,5 @@
 # Modulo de datos secretos, nunca debe subirse al repo
-SecretConfig.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

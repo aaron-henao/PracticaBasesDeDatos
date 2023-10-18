@@ -3,7 +3,7 @@ import SecretConfig
 import psycopg2
 from datetime import datetime
 from Card import CreditCard
-from CardController import ObtenerCursor, register_credit_card, calculate_payment, make_purchase, get_monthly_payments_report
+from CardController import ObtenerCursor, register_credit_card, calculate_payment, make_purchase, get_monthly_payments_report, calculate_amortization_plan
 
 class TestCardController(unittest.TestCase):
     def setUp(self):
@@ -259,6 +259,31 @@ class TestCardController(unittest.TestCase):
         # Comprueba si el resultado coincide con el esperado
         self.assertEqual(result, expected_result)
 
-   
+    def test_amortization_plan_calculation(self):
+        card_number = "556677"
+        purchase_amount = 200000
+        num_installments = 36
+        interest_rate = 3.10
+        purchase_date = "2023-09-22"
+
+        # Llama a la función para calcular el plan de amortización
+        monthly_payment, capital_amounts, interest_amounts = calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date)
+
+        # Comprueba que la cuota mensual sea igual a 9297.959116 con un margen de error de 6 decimales
+        self.assertAlmostEqual(monthly_payment, 9297.959116, places=6)
+
+        # Calcula el total de abonos sumando todos los pagos de capital
+        total_abonos = sum(capital_amounts)
+
+        # Comprueba que el total de abonos sea igual a 334,726.53 con un margen de error de 2 decimales
+        self.assertAlmostEqual(total_abonos, 334726.53, places=2)
+
+        # Calcula el total de intereses sumando todos los pagos de interés
+        total_intereses = sum(interest_amounts)
+
+        # Comprueba que el total de intereses sea igual a 134,726.53 con un margen de error de 2 decimales
+        self.assertAlmostEqual(total_intereses, 134726.53, places=2)
+
+
 if __name__ == '__main__':
     unittest.main()

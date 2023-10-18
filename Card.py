@@ -1,3 +1,4 @@
+from datetime import date
 class CreditCard:
     card_numer: str
     owner_id: int
