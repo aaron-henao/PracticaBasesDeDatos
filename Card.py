@@ -1,6 +1,6 @@
 from datetime import date
 class CreditCard:
-    card_numer: str
+    card_number: str
     owner_id: int
     owner_name: str
     bank_name: str 
@@ -29,6 +29,7 @@ class PaymentPlan:
     interest_amount: float
     capital_amount: float
     balance: float
+
     def __init__(self, card_number, purchase_date, purchase_amount, payment_date, payment_amount, interest_amount, capital_amount, balance):
         self.card_number = card_number
         self.purchase_date = purchase_date
@@ -38,3 +39,5 @@ class PaymentPlan:
         self.interest_amount = interest_amount
         self.capital_amount = capital_amount
         self.balance = balance
+
+ 

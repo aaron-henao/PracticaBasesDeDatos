@@ -3,9 +3,14 @@ from datetime import date
 from psycopg2 import sql
 from datetime import datetime, timedelta
 import SecretConfig
+from Card import CreditCard, PaymentPlan
+import sys
 
 
 MAX_INTEREST = 100/12
+
+class Errors (Exception):
+    pass
 
 class ExcesiveInterestException( Exception ): 
     """ 
@@ -43,49 +48,55 @@ def create_tables():
             
         Crea las tablas en la base de datos
     """
+    sql = ""
+    with open("sql/create-tables.sql","r") as f:
+        sql = f.read()
+
+    cursor = ObtenerCursor()
+
     try:
-         cursor = ObtenerCursor()
-         create_credit_card_table = sql.SQL('''CREATE TABLE IF NOT EXISTS credit_card (
-             card_number VARCHAR(16),
-             owner_id VARCHAR(10),
-             owner_name VARCHAR(255),
-              bank_name VARCHAR(255),
-              due_date DATE,
-              franchise VARCHAR(255),
-              payment_day INTEGER,
-              monthly_fee NUMERIC(10, 2),
-              interest_rate NUMERIC(5, 2)
-            )''')
-
-         create_payment_plan = sql.SQL('''create table payment_plan(
-            card_number varchar(20) not null,
-            purchase_date date not null,
-            purchase_amount float not null,
-            payment_day int not null,
-            payment_amount float not null,
-            interest_amount float not null,
-            capital_amount float not null,
-            balance float not null
-
-            );''')
-         # Ejecutar las consultas SQL - Executing SQL queries
-         cursor.execute(create_credit_card_table)
-         cursor.execute(create_payment_plan)
-
+         cursor.execute( sql )
          cursor.connection.commit()
-         cursor.close()
-         cursor.connection.close()
-         return "Tablas creadas exitosamente - Successfully created tables"
-    except Exception as e:
-         return str(e)
-    
-   
+    except:
+        cursor.connection.rollback
 
+    
 def register_credit_card(card):
     """
     The card is registered in the database
 
     Se realiza el registro de la tarjeta en la base de datos
+    """
+    try: 
+        cursor = ObtenerCursor()
+
+        # Obtener la fecha de vencimiento como una cadena en el formato "31/12/2027"
+        #  Get the expiration date as a string in the format "12/31/2027"
+        due_date_str = card.due_date
+        due_date = datetime.strptime(due_date_str, "%d/%m/%Y").date()  # Convertir la cadena a fecha
+
+        # Verificar si la fecha de vencimiento es menor que la fecha actual
+        # Check if the due date is less than the current date
+        current_date = datetime.now().date()
+        if due_date < current_date:
+            raise ("No se permite guardar la tarjeta porque está vencida")
+        
+        cursor.execute(f"""
+        insert into credit_card (
+                card_number, owner_id, owner_name, bank_name, due_date, franchise, payment_day, monthly_fee, interest_rate
+        )
+        values
+        (
+            '{CreditCard.card_number}', '{CreditCard.owner_id}', '{CreditCard.owner_name}', '{CreditCard.bank_name}', '{CreditCard.due_date}', '{CreditCard.franchise}',
+            '{CreditCard.monthly_fee}', '{CreditCard.interest_rate}'
+        );
+            
+                       """)
+        cursor.connection.commit()
+        raise ("Tarjeta guardada exitosamente")
+    except:
+        cursor.connection.rollback
+        raise Exception
     """
     try:
         cursor = ObtenerCursor()
@@ -113,7 +124,7 @@ def register_credit_card(card):
     except psycopg2.IntegrityError:
         return "No permite guardar la tarjeta, porque ya existe"
     except Exception as e:
-        return str(e)
+        return str(e)"""
 
 def checkInterest(interest_rate):
         """ 
