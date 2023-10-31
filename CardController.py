@@ -267,6 +267,7 @@ def calculate_amortization_plan(card_number, purchase_amount, num_installments, 
 
         # Calcula los montos de interés y capital
         balance = purchase_amount
+        """
         interest_amounts = []
         capital_amounts = []
         for _ in range(num_installments):
@@ -275,16 +276,47 @@ def calculate_amortization_plan(card_number, purchase_amount, num_installments, 
             interest_amounts.append(interest_amount)
             capital_amounts.append(capital_amount)
             balance -= capital_amount
+            total_intereses = sum(interest_amounts)
+            total_abonos = sum(capital_amounts)
+        payment_amount = monthly_payment
+        
 
         # Inserta la información en la tabla payment_plan
         for i in range(num_installments):
-            cursor.execute("INSERT INTO payment_plan (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amount, capital_amount, balance) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                           (card_number, purchase_date, purchase_amount, i + 1, monthly_payment, interest_amounts[i], capital_amounts[i], balance))
+            insert_query = sql.SQL("INSERT INTO payment_plan (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amount, capital_amount, balance) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"),
+                                   
+            cursor.execute(insert_query, (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amounts[i], capital_amounts[i], balance))
+            cursor.connection.commit()"""
+        total_abonos = 0
+        total_intereses = 0
+        for i in range(num_installments):
+            interest_amount = balance * (interest_rate / 100 / 12)
+            capital_amount = monthly_payment - interest_amount
+            balance -= capital_amount
+            total_abonos += capital_amount
+            total_intereses += interest_amount
+        
 
-        return monthly_payment, capital_amounts, interest_amounts
+
+            # Insertar cada cuota en una fila
+            insert_query = "INSERT INTO payment_plan (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amount, capital_amount, balance) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            data = (card_number, purchase_date, purchase_amount, payment_dates[i], monthly_payment, interest_amount, capital_amount, balance)
+            cursor.execute(insert_query, data)
+            cursor.connection.commit()
+
+        cursor.close()
+        cursor.connection.close()
+        return f"Cuota mensual = {monthly_payment}, Total Abonos = {total_abonos}, Total intereses = {total_intereses}"
 
     except Exception as e:
-        return None, None, None
+        return "No se pudo guardar el plan de amortización"
+
+def insert_amortization_plan():
+    try:
+        cursor = ObtenerCursor
+        card = calculate_amortization_plan
+    except Exception as e:
+        return "No se pudo guardar el plan de amortización"   
     
 def get_monthly_payments_report(card_number: int, start_date: date , end_date: date):
         """
@@ -292,6 +324,25 @@ def get_monthly_payments_report(card_number: int, start_date: date , end_date: d
         
             Obtiene el reporte de pagos según la fecha indicada
         """
+        try:
+            cursor = ObtenerCursor()
+
+            cursor.execute(
+                "SELECT interest_rate FROM credit_card WHERE card_number = %s", (card_number,))
+            row = cursor.fetchone()
+            if row is None:
+                return "La tarjeta indicada no existe"
+            
+            query = sql.SQL('''SELECT card_number, purchase_date, 
+                               FROM amortization_plan
+                               WHERE card_number = %s AND installment_due_date >= %s AND installment_due_date <= %s
+                               ORDER BY installment_due_date''')
+            cursor.execute(query, (card_number, start_date, end_date))
+            rows = cursor.fetchall()
+            
+        
+        except Exception as e:
+            return ""
         try:
             cursor = ObtenerCursor()
             # Verificar si la tarjeta existe - Check if the card exists

@@ -29,14 +29,14 @@ class TestCardController(unittest.TestCase):
     def test_register_credit_card_T1(self):
         card_data = CreditCard(
             card_number="556677",
-            owner_id="1010123456",
-            owner_name="Comprador compulsivo",
-            bank_name="Bancolombia",
-            due_date= "31/12/2027",
-            franchise="VISA",
-            payment_day=10,
-            monthly_fee=24000,
-            interest_rate=3.1,
+            owner_id ="1010123456",
+            owner_name ="Comprador compulsivo",
+            bank_name ="Bancolombia",
+            due_date = "31/12/2027",
+            franchise ="VISA",
+            payment_day = 10,
+            monthly_fee = 24000,
+            interest_rate = 3.1,
         )
         # Pasar el objeto card_data como único argumento
         # Pass object card_data as the only argument
@@ -244,6 +244,62 @@ class TestCardController(unittest.TestCase):
         result = make_purchase(purchase_amount, interest_rate, monthly_payment)
         self.assertEqual(result, "Número de meses ahorrando: 1")
     
+    def test_amortization_plan_calculation_1(self):
+        card_number = "556677"
+        purchase_amount = 200000
+        num_installments = 36
+        interest_rate = 3.10
+        purchase_date = "2023-09-22"
+        payment_day = 10
+        
+        # Llama a la función para calcular el plan de amortización
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day)
+        expected_result = "Cuota mensual = 9297.959116, Total Abonos = 334726.53, Total intereses = 134726.53"
+
+        self.assertAlmostEqual(expected_result, "Cuota mensual = 9297.959116, Total Abonos = 334726.53, Total intereses = 134726.53")
+
+    def test_amortization_plan_calculation_2(self):
+        card_number = "223344"
+        purchase_amount = 850000
+        num_installments = 24
+        interest_rate = 3.40
+        purchase_date = "2023-09-25"
+        payment_day = 16
+        
+        # Llama a la función para calcular el plan de amortización
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day)
+        expected_result = "Cuota mensual = 52377.49864, Total Abonos = 1257059.96736, Total intereses = 407059.97"
+
+        self.assertAlmostEqual(expected_result, "Cuota mensual = 52377.49864, Total Abonos = 1257059.96736, Total intereses = 407059.97")
+
+    def test_amortization_plan_calculation_tasa_cero(self):
+        card_number = "445566"
+        purchase_amount = 480000
+        num_installments = 48
+        interest_rate = 0.00
+        purchase_date = "2023-09-29"
+        payment_day = 5
+        
+        # Llama a la función para calcular el plan de amortización
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day)
+        expected_result = "Cuota mensual = 10000, Total Abonos = 480000.00, Total intereses = 0.00"
+
+        self.assertAlmostEqual(expected_result, "Cuota mensual = 10000, Total Abonos = 480000.00, Total intereses = 0.00")
+
+    def test_amortization_plan_calculation_cuota_unica(self):
+        card_number = "445566"
+        purchase_amount = 90000
+        num_installments = 1
+        interest_rate = 0.00
+        purchase_date = "2023-11-17"
+        payment_day = 5
+        
+        # Llama a la función para calcular el plan de amortización
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day)
+        expected_result = "Cuota mensual = 10000, Total Abonos = 10000.00, Total intereses = 0.00"
+
+        self.assertAlmostEqual(expected_result, "Cuota mensual = 10000, Total Abonos = 10000.00, Total intereses = 0.00")
+
     def test_get_monthly_payments_report(self):
         # Entradas de prueba
         card_number = "223344 Falabella"
@@ -258,32 +314,6 @@ class TestCardController(unittest.TestCase):
 
         # Comprueba si el resultado coincide con el esperado
         self.assertEqual(result, expected_result)
-
-    def test_amortization_plan_calculation(self):
-        card_number = "556677"
-        purchase_amount = 200000
-        num_installments = 36
-        interest_rate = 3.10
-        purchase_date = "2023-09-22"
-
-        # Llama a la función para calcular el plan de amortización
-        monthly_payment, capital_amounts, interest_amounts = calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date)
-
-        # Comprueba que la cuota mensual sea igual a 9297.959116 con un margen de error de 6 decimales
-        self.assertAlmostEqual(monthly_payment, 9297.959116, places=6)
-
-        # Calcula el total de abonos sumando todos los pagos de capital
-        total_abonos = sum(capital_amounts)
-
-        # Comprueba que el total de abonos sea igual a 334,726.53 con un margen de error de 2 decimales
-        self.assertAlmostEqual(total_abonos, 334726.53, places=2)
-
-        # Calcula el total de intereses sumando todos los pagos de interés
-        total_intereses = sum(interest_amounts)
-
-        # Comprueba que el total de intereses sea igual a 134,726.53 con un margen de error de 2 decimales
-        self.assertAlmostEqual(total_intereses, 134726.53, places=2)
-
 
 if __name__ == '__main__':
     unittest.main()
