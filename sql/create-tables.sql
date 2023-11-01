@@ -13,8 +13,8 @@ create table credit_card(
 create table payment_plan (
     card_number varchar(20) not null,
     purchase_date date not null,
+    payment_date date not null,
     purchase_amount float not null,
-    payment_day int not null,
     payment_amount float not null,
     interest_amount float not null,
     capital_amount float not null,

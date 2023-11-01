@@ -3,8 +3,7 @@ from datetime import date
 from psycopg2 import sql
 from datetime import datetime, timedelta
 import SecretConfig
-from Card import CreditCard, PaymentPlan
-import sys
+from dateutil.relativedelta import relativedelta
 
 
 MAX_INTEREST = 100/12
@@ -54,14 +53,16 @@ def create_tables():
 
     cursor = ObtenerCursor()
 
+
     try:
          cursor.execute( sql )
          cursor.connection.commit()
+
     except:
         cursor.connection.rollback
 
-    
-def register_credit_card(card):
+   
+def register_credit_card(CreditCard):
     """
     The card is registered in the database
 
@@ -72,59 +73,35 @@ def register_credit_card(card):
 
         # Obtener la fecha de vencimiento como una cadena en el formato "31/12/2027"
         #  Get the expiration date as a string in the format "12/31/2027"
-        due_date_str = card.due_date
+        due_date_str = CreditCard.due_date
         due_date = datetime.strptime(due_date_str, "%d/%m/%Y").date()  # Convertir la cadena a fecha
 
         # Verificar si la fecha de vencimiento es menor que la fecha actual
         # Check if the due date is less than the current date
         current_date = datetime.now().date()
         if due_date < current_date:
-            raise ("No se permite guardar la tarjeta porque está vencida")
+            raise ValueError("No se permite guardar la tarjeta porque está vencida")
         
+
         cursor.execute(f"""
         insert into credit_card (
                 card_number, owner_id, owner_name, bank_name, due_date, franchise, payment_day, monthly_fee, interest_rate
         )
         values
         (
-            '{CreditCard.card_number}', '{CreditCard.owner_id}', '{CreditCard.owner_name}', '{CreditCard.bank_name}', '{CreditCard.due_date}', '{CreditCard.franchise}',
-            '{CreditCard.monthly_fee}', '{CreditCard.interest_rate}'
+            '{CreditCard.card_number}', '{CreditCard.owner_id}', '{CreditCard.owner_name}', '{CreditCard.bank_name}', TO_DATE('{due_date}', 'YYYY-MM-DD'), '{CreditCard.franchise}',
+            '{CreditCard.payment_day}', '{CreditCard.monthly_fee}', '{CreditCard.interest_rate}'
         );
             
                        """)
         cursor.connection.commit()
-        raise ("Tarjeta guardada exitosamente")
+        raise ValueError("Tarjeta guardada exitosamente")
+    
+    except psycopg2.IntegrityError:
+        raise ValueError("No permite guardar la tarjeta, porque ya existe")
     except:
         cursor.connection.rollback
-        raise Exception
-    """
-    try:
-        cursor = ObtenerCursor()
 
-        # Obtener la fecha de vencimiento como una cadena en el formato "31/12/2027"
-        #  Get the expiration date as a string in the format "12/31/2027"
-        due_date_str = card.due_date
-        due_date = datetime.strptime(due_date_str, "%d/%m/%Y").date()  # Convertir la cadena a fecha
-
-        # Verificar si la fecha de vencimiento es menor que la fecha actual
-        # Check if the due date is less than the current date
-        current_date = datetime.now().date()
-        if due_date < current_date:
-            return "No se permite guardar la tarjeta porque está vencida"
-
-        # Continuar con la inserción de la tarjeta si no está vencida
-        # Continue with the insertion of the card if it is not expired
-        insert_query = sql.SQL('''INSERT INTO credit_card (card_number, owner_id, owner_name, bank_name, due_date, franchise, payment_day, monthly_fee, interest_rate)
-                                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''')
-        cursor.execute(insert_query, (
-            card.card_number, card.owner_id, card.owner_name, card.bank_name, due_date, card.franchise,
-            card.payment_day, card.monthly_fee, card.interest_rate))
-        cursor.connection.commit()
-        return "Tarjeta guardada exitosamente"
-    except psycopg2.IntegrityError:
-        return "No permite guardar la tarjeta, porque ya existe"
-    except Exception as e:
-        return str(e)"""
 
 def checkInterest(interest_rate):
         """ 
@@ -181,19 +158,17 @@ def calculate_interest(monthly_payment: float, num_installments: int, purchase_a
      
 
 
-def calculate_payment(purchase_amount: float, card: dict, num_installments: int):
+def calculate_payment(purchase_amount: float, interest_rate:float , num_installments: int):
     """
         Calculate the payment of the total interest and the fee for each purchase
 
         Calcula el pago del total de intereses y la cuota para cada compra
     """
     
-    
     try:
+        
         if purchase_amount <= 0:
             raise Exception("Error: El Monto debe ser superior a cero")
-
-        interest_rate = card.get("interest_rate")
 
         if interest_rate is None:
             raise Exception("Error: La tarjeta indicada no existe")
@@ -216,7 +191,11 @@ def calculate_payment(purchase_amount: float, card: dict, num_installments: int)
 
             total_interest = (monthly_payment * num_installments) - purchase_amount
 
-        return f"Total Intereses: {total_interest:.2f} - Cuota: {monthly_payment:.4f}"
+        total_interest = round(total_interest, 2)
+        monthly_payment = round(monthly_payment, 4)
+
+        return total_interest, monthly_payment
+        
 
     except ExcesiveInterestException as e:
         return f"Error: {str(e)}", None
@@ -255,131 +234,80 @@ def make_purchase(purchase_amount: float, interest_rate: float, monthly_payment:
 
         if monthly_payment >= purchase_amount:
              num_months = num_months -1
-             return f"Número de meses ahorrando: {num_months}"
+             return num_months
         
     
-        return f"Número de meses ahorrando: {num_months}"
+        return num_months
 
     except Exception as e:
         return str(e)
 
 def calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date):
     try:
-        cursor = ObtenerCursor()
 
+        cursor = ObtenerCursor()
         monthly_payment = calculate_fee_payment(purchase_amount, interest_rate, num_installments)
 
-        # Calcula las fechas de pago
-        payment_dates = []
-        payment_date = datetime.strptime(purchase_date, '%Y-%m-%d')
-        for _ in range(num_installments):
-            payment_dates.append(payment_date.strftime('%Y-%m-%d'))
-            payment_date += timedelta(months=1)
+        if num_installments > 1:
+            
+            # Calcula las fechas de pago
+            payment_dates = []
+            payment_date = datetime.strptime(purchase_date, '%Y-%m-%d')
+            
+            for _ in range(num_installments):
+                payment_dates.append(payment_date.strftime('%Y-%m-%d'))
+                payment_date += relativedelta(months=1)
 
-        # Calcula los montos de interés y capital
-        balance = purchase_amount
-        """
-        interest_amounts = []
-        capital_amounts = []
-        for _ in range(num_installments):
-            interest_amount = balance * (interest_rate / 100 / 12)
-            capital_amount = monthly_payment - interest_amount
-            interest_amounts.append(interest_amount)
-            capital_amounts.append(capital_amount)
-            balance -= capital_amount
-            total_intereses = sum(interest_amounts)
-            total_abonos = sum(capital_amounts)
-        payment_amount = monthly_payment
-        
+            # Calcula los montos de interés y capital
+            balance = purchase_amount
+            total_abonos = 0
+            total_intereses = 0
+            
+            for i in range(num_installments):
+                interest_amount = balance * (interest_rate / 100 / 12)
+                capital_amount = monthly_payment - interest_amount
+                balance -= capital_amount
+                total_abonos += capital_amount
+                total_intereses += interest_amount
 
-        # Inserta la información en la tabla payment_plan
-        for i in range(num_installments):
-            insert_query = sql.SQL("INSERT INTO payment_plan (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amount, capital_amount, balance) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"),
-                                   
-            cursor.execute(insert_query, (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amounts[i], capital_amounts[i], balance))
-            cursor.connection.commit()"""
-        total_abonos = 0
-        total_intereses = 0
-        for i in range(num_installments):
-            interest_amount = balance * (interest_rate / 100 / 12)
-            capital_amount = monthly_payment - interest_amount
-            balance -= capital_amount
-            total_abonos += capital_amount
-            total_intereses += interest_amount
-        
+                insert_query = sql.SQL ("""
+                    INSERT INTO payment_plan (card_number, purchase_date, payment_date, purchase_amount, payment_amount, interest_amount, capital_amount, balance)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (card_number, purchase_date) DO NOTHING
+                    """)
+                
+                cursor.execute(insert_query, (card_number, purchase_date, payment_dates[i], purchase_amount, monthly_payment, interest_amount, capital_amount, balance))
+                cursor.connection.commit()
 
+            cursor.close()
+            return f"Cuota mensual = {monthly_payment}, Total Abonos = {total_abonos}, Total intereses = {total_intereses}"
+        else:
 
-            # Insertar cada cuota en una fila
-            insert_query = "INSERT INTO payment_plan (card_number, purchase_date, purchase_amount, payment_day, payment_amount, interest_amount, capital_amount, balance) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-            data = (card_number, purchase_date, purchase_amount, payment_dates[i], monthly_payment, interest_amount, capital_amount, balance)
-            cursor.execute(insert_query, data)
-            cursor.connection.commit()
-
-        cursor.close()
-        cursor.connection.close()
-        return f"Cuota mensual = {monthly_payment}, Total Abonos = {total_abonos}, Total intereses = {total_intereses}"
+            return f"Cuota mensual = {monthly_payment}, Total Abonos = {purchase_amount}, Total intereses = {total_intereses}"
 
     except Exception as e:
         return "No se pudo guardar el plan de amortización"
 
-def insert_amortization_plan():
-    try:
-        cursor = ObtenerCursor
-        card = calculate_amortization_plan
-    except Exception as e:
-        return "No se pudo guardar el plan de amortización"   
+
     
-def get_monthly_payments_report(card_number: int, start_date: date , end_date: date):
-        """
-            Gets the payment report according to the indicated date
+def get_monthly_payments_report(start_date: date, end_date: date):
+    try:
+        cursor = ObtenerCursor()
         
-            Obtiene el reporte de pagos según la fecha indicada
-        """
-        try:
-            cursor = ObtenerCursor()
+        query = sql.SQL('''SELECT payment_plan.payment_amount
+                           FROM payment_plan
+                           INNER JOIN credit_card ON payment_plan.card_number = credit_card.card_number
+                           WHERE credit_card.owner_id = '1010123456' AND payment_plan.payment_date >= %s and payment_plan.payment_date <= %s''')
+        cursor.execute(query, (start_date, end_date))
+        rows = cursor.fetchall()
 
-            cursor.execute(
-                "SELECT interest_rate FROM credit_card WHERE card_number = %s", (card_number,))
-            row = cursor.fetchone()
-            if row is None:
-                return "La tarjeta indicada no existe"
-            
-            query = sql.SQL('''SELECT card_number, purchase_date, 
-                               FROM amortization_plan
-                               WHERE card_number = %s AND installment_due_date >= %s AND installment_due_date <= %s
-                               ORDER BY installment_due_date''')
-            cursor.execute(query, (card_number, start_date, end_date))
-            rows = cursor.fetchall()
-            
-        
-        except Exception as e:
-            return ""
-        try:
-            cursor = ObtenerCursor()
-            # Verificar si la tarjeta existe - Check if the card exists
-            cursor.execute(
-                "SELECT interest_rate FROM credit_card WHERE card_number = %s", (card_number,))
-            row = cursor.fetchone()
-            if row is None:
-                return "La tarjeta indicada no existe"
+        total_monthly_payments = sum(row[0] for row in rows)  # Suma de los montos de cuotas mensuales
 
-            # Consultar las cuotas en el rango de fechas - See odds in the date range
-            query = sql.SQL('''SELECT installment_due_date, installment_amount
-                               FROM amortization_plan
-                               WHERE card_number = %s AND installment_due_date >= %s AND installment_due_date <= %s
-                               ORDER BY installment_due_date''')
-            cursor.execute(query, (card_number, start_date, end_date))
-            rows = cursor.fetchall()
+        return f"Total: {total_monthly_payments:.2f}"
+    
+    except Exception as e:
+        return str(e)
 
-            # Calcular el total de cuotas mensuales - Calculate total monthly installments
-            total_monthly_payments = 0.0
-            for row in rows:
-                total_monthly_payments += row[1]
-
-            return f"Total de cuotas mensuales en el rango: {total_monthly_payments:.2f}"
-
-        except Exception as e:
-            return str(e)
 
 def close_connection():
         cursor = ObtenerCursor()
