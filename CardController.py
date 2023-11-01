@@ -61,7 +61,7 @@ def create_tables():
     except:
         cursor.connection.rollback
 
-   
+
 def register_credit_card(CreditCard):
     """
     The card is registered in the database

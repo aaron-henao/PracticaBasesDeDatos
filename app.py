@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify 
-from flask import render_template
+from flask import Flask, request, jsonify, render_template
 from SecretConfig import DATABASE, USER, PASSWORD, HOST, PORT
-from datetime import datetime, timedelta
 import psycopg2
+from Card import CreditCard
 from CardController import register_credit_card, calculate_payment, make_purchase, calculate_amortization_plan
+import CardController
 
 
 app = Flask(__name__)     
@@ -19,6 +19,68 @@ def ObtenerCursor():
 def params():
     return request.args
 
+@app.route('/view/new-card')
+def VistaAgregarTajeta():
+    return render_template("new-card.html")
+
+@app.route("/view/save-card", methods=['GET'])
+def VistaGuardarTarjeta():
+    try:
+        card_number = request.args.get("card_number")
+        if card_number is None:
+            return "Falta el número de tarjeta en la solicitud"
+        owner_id = request.args["owner_id"]
+        owner_name = request.args["owner_name"]
+        bank_name = request.args["bank_name"]
+        due_date = request.args["due_date"]
+        franchise = request.args["franchise"]
+        payment_day = request.args["payment_day"]
+        monthly_fee = request.args["monthly_fee"]
+        interest_rate = request.args["interest_rate"]
+
+        new_card = CreditCard(card_number, owner_id,owner_name,bank_name,due_date,franchise,payment_day,monthly_fee,interest_rate)
+        CardController.register_credit_card(new_card)
+        return f"La tarjeta {card_number} se ha agregado correctamente"
+    except:
+        return f"La tarjeta {card_number} no se pudo agregar correctamente"
+
+@app.route("/view/purchase-simulate")
+def VistaSimularCompra():
+    purchase_amount = float(request.args["purchase_amount"])
+    card_number = request.args["card_number"]
+    num_installments = int(request.args["num_installments"])
+
+    cursor = ObtenerCursor()
+    cursor.execute(f"""select interest_rate from credit_card where card_number='{card_number}'""")
+    interest_rate = float(cursor.fetchone()[0])
+
+    compra = calculate_payment(purchase_amount, interest_rate, num_installments)
+    CardController.calculate_payment(compra)
+    return compra
+
+
+@app.route("/view/simulate-saving")
+def VistaAhorroProgramado():
+    purchase_amount = float(request.args["purchase_amount"])
+    monthly_payment = float(request.args["monthly_payment"])
+    interest_rate = float(request.args["interest_rate"])
+
+    result = make_purchase(purchase_amount, interest_rate, monthly_payment)
+    return (f"Número de meses ahorrando: {result}")
+
+@app.route("/view/payment-sheduling")
+def VistaProgramacionPagos():
+    start_date = request.args[start_date]
+    end_date = request.args[end_date]
+
+    total_monthly_payments = CardController.get_monthly_payments_report(start_date, end_date)
+
+
+
+    
+
+#WEB SERVICE
+
 #http://localhost:5000/api/card/new?card_number=556677&owner_id=1010123456&owner_name=Comprador compulsivo&bank_name=Bancolombia&due_date=2027-12-31&franchise=VISA&payment_day=10&monthly_fee=24000.00&interest_rate=3.10
 @app.route("/api/card/new")
 def register_card():
@@ -33,18 +95,15 @@ def register_card():
     monthly_fee = request.args["monthly_fee"]
     interest_rate = request.args["interest_rate"]
 
-    cursor = ObtenerCursor()
-
-    register_credit_card(CreditCard=(card_number, owner_id,owner_name,bank_name,due_date,franchise,payment_day,monthly_fee,interest_rate))
-
-    cursor.execute(register_credit_card)
-    cursor.connection.commit()
-    cursor.connection.close()
+    new_card = CreditCard(card_number, owner_id,owner_name,bank_name,due_date,franchise,payment_day,monthly_fee,interest_rate)
+    CardController.register_credit_card(new_card)
     return {"status": "ok"}
   except:
       return jsonify({"status": "error", "error": "La tarjeta no pudo registrarse"})
-  
-      
+
+
+
+
   
 #http://localhost:5000/api/simulate/purchase?card_number=556677&purchase_amount=20000&num_installments=36  
 @app.route("/api/simulate/purchase")
@@ -134,5 +193,5 @@ def new_purchase():
     
     
 if __name__=='__main__':
-   app.run() 
+   app.run(debug=True) 
     

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <h1>
+        Agregar tarjeta
+    </h1>
+        
+
+    <p> Ingrese sus datos personales y los de su tarjeta para agregarlos al sistema.</p>
+</head>
+
+<body>
+    <form action="/view/new-card">
+        <div>
+            Número de la tarjeta: <input type="text" name="card_number" />
+        </div>
+        <div>
+            Cédula del Tarjetahabiente: <input type="number" name="owner_id" />
+        </div>
+        <div>
+            Nombre del Tarjetahabiente: <input type="text" name="owner_name" />
+        </div>
+        <div>
+            Banco: <input type="text" name="bank_name" />
+        </div>
+        <div>
+            Fecha de vencimiento: <input type="date" name="due_date" />
+        </div>
+        <div>
+            Franquisia: <input type="text" name="franchise" />
+        </div>
+        <div>
+            Dia de pago en el mes: <input type="number" name="franchise" />
+        </div>
+        <div>
+           Cuota de manejo mensual: <input type="number" name="monthly_fee" />
+        </div>
+        <div>
+            Tasa de interés: <input type="number" name="interest_rate" />
+        </div>
+        <input type="submit" value="Guardar" />
+    </form>
+</body>
+
+</html>
