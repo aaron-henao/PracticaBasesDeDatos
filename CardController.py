@@ -100,7 +100,7 @@ def register_credit_card(CreditCard):
     except psycopg2.IntegrityError:
         raise ValueError("No permite guardar la tarjeta, porque ya existe")
     except:
-        cursor.connection.rollback
+        cursor.connection.rollback()
 
 
 def checkInterest(interest_rate):

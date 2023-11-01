@@ -4,7 +4,8 @@ import psycopg2
 from Card import CreditCard
 from CardController import register_credit_card, calculate_payment, make_purchase, calculate_amortization_plan
 import CardController
-
+import traceback
+from Card import CreditCard
 
 app = Flask(__name__)     
 
@@ -23,26 +24,30 @@ def params():
 def VistaAgregarTajeta():
     return render_template("new-card.html")
 
-@app.route("/view/save-card", methods=['GET'])
+@app.route("/view/save-card")
 def VistaGuardarTarjeta():
     try:
-        card_number = request.args.get("card_number")
-        if card_number is None:
-            return "Falta el número de tarjeta en la solicitud"
+        
+        card_number = request.args["card_number"]
         owner_id = request.args["owner_id"]
         owner_name = request.args["owner_name"]
         bank_name = request.args["bank_name"]
         due_date = request.args["due_date"]
         franchise = request.args["franchise"]
-        payment_day = request.args["payment_day"]
-        monthly_fee = request.args["monthly_fee"]
-        interest_rate = request.args["interest_rate"]
+        payment_day = int(request.args["payment_day"])
+        monthly_fee = float(request.args["monthly_fee"])
+        interest_rate = float(request.args["interest_rate"])
 
         new_card = CreditCard(card_number, owner_id,owner_name,bank_name,due_date,franchise,payment_day,monthly_fee,interest_rate)
-        CardController.register_credit_card(new_card)
+        CardController.register_credit_card( new_card) 
         return f"La tarjeta {card_number} se ha agregado correctamente"
-    except:
-        return f"La tarjeta {card_number} no se pudo agregar correctamente"
+        
+    
+    except Exception as e:
+        error_message = f"Error al agregar la tarjeta {card_number}: {str(e)}"
+        traceback.print_exc()  # Imprime la traza de la excepción para depuración
+        return error_message
+    
 
 @app.route("/view/purchase-simulate")
 def VistaSimularCompra():
@@ -193,5 +198,6 @@ def new_purchase():
     
     
 if __name__=='__main__':
+   CardController.create_tables
    app.run(debug=True) 
     
