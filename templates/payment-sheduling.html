@@ -2,54 +2,25 @@
 <html>
 
 <head>
-
+    <h1>
+        Simular una compra
+    </h1>
+        
 </head>
 
 <body>
-    
-    <table>
-        <h1>Programación de pagos</h1>
-        <!-- El elemento thead describe el area de encabezado en  la tabla -->
-        <thead style="font-weight: bold;">
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        </thead>
-
-        <!-- El elemento tbody describe el cuerpo de la tabla -->
-        <tbody>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        </tbody>
-        <!-- tfoot se usa para describir el pie de la tabla -->
-        <tfoot style="background-color: lightblue;">
-        </tfoot>
-    </table>
+    <form action="/view/purchase-simulate">
+        <div>
+            Monto de la compra: <input type="number" name="purchase_amount" />
+        </div>
+        <div>
+            Número de tarjeta: <input type="text" name="card_number" />
+        </div>
+        <div>
+            Número de cuotas: <input type="number" name="num_installments" />
+        </div>
+        <input type="submit" step="any" value="Simular Compra" />
+    </form>
 </body>
 
 </html>

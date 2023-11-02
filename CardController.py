@@ -4,6 +4,7 @@ from psycopg2 import sql
 from datetime import datetime, timedelta
 import SecretConfig
 from dateutil.relativedelta import relativedelta
+from Card import CreditCard, PaymentPlan
 
 
 MAX_INTEREST = 100/12
@@ -61,8 +62,22 @@ def create_tables():
     except:
         cursor.connection.rollback
 
+def insert_card(card: CreditCard):
 
-def register_credit_card(CreditCard):
+    cursor = ObtenerCursor()
+    cursor.execute(f"""
+        insert into credit_card (
+                    card_number, owner_id, owner_name, bank_name, due_date, franchise, payment_day, monthly_fee, interest_rate
+        )
+        values
+        (
+            '{card.card_number}', '{card.owner_id}', '{card.owner_name}', '{card.bank_name}', TO_DATE('{card.due_date}', 'YYYY-MM-DD'), '{card.franchise}',
+            '{card.payment_day}', '{card.monthly_fee}', '{card.interest_rate}'
+        ); 
+                    """)
+    cursor.connection.commit()
+                
+def register_credit_card(card: CreditCard):
     """
     The card is registered in the database
 
@@ -73,13 +88,13 @@ def register_credit_card(CreditCard):
 
         # Obtener la fecha de vencimiento como una cadena en el formato "31/12/2027"
         #  Get the expiration date as a string in the format "12/31/2027"
-        due_date_str = CreditCard.due_date
-        due_date = datetime.strptime(due_date_str, "%d/%m/%Y").date()  # Convertir la cadena a fecha
+        due_date_str = card.due_date
+        card.due_date = datetime.strptime(due_date_str, "%d/%m/%Y").date()  # Convertir la cadena a fecha
 
         # Verificar si la fecha de vencimiento es menor que la fecha actual
         # Check if the due date is less than the current date
         current_date = datetime.now().date()
-        if due_date < current_date:
+        if card.due_date < current_date:
             raise ValueError("No se permite guardar la tarjeta porque está vencida")
         
 
@@ -89,8 +104,8 @@ def register_credit_card(CreditCard):
         )
         values
         (
-            '{CreditCard.card_number}', '{CreditCard.owner_id}', '{CreditCard.owner_name}', '{CreditCard.bank_name}', TO_DATE('{due_date}', 'YYYY-MM-DD'), '{CreditCard.franchise}',
-            '{CreditCard.payment_day}', '{CreditCard.monthly_fee}', '{CreditCard.interest_rate}'
+            '{card.card_number}', '{card.owner_id}', '{card.owner_name}', '{card.bank_name}', TO_DATE('{card.due_date}', 'YYYY-MM-DD'), '{card.franchise}',
+            '{card.payment_day}', '{card.monthly_fee}', '{card.interest_rate}'
         );
             
                        """)
@@ -100,7 +115,7 @@ def register_credit_card(CreditCard):
     except psycopg2.IntegrityError:
         raise ValueError("No permite guardar la tarjeta, porque ya existe")
     except:
-        cursor.connection.rollback()
+        cursor.connection.rollback
 
 
 def checkInterest(interest_rate):
@@ -241,8 +256,33 @@ def make_purchase(purchase_amount: float, interest_rate: float, monthly_payment:
 
     except Exception as e:
         return str(e)
+"""
+def create_plan(plan: PaymentPlan):
+    plan = []
+    payment_dates = []
+    payment_date = datetime.strptime(plan.purchase_date, '%Y-%m-%d')
+    result = calculate_payment(plan.purchase_amount, plan.interest_rate, plan.num_installments)
+    monthly_payment = float(result[1])
 
-def calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date):
+    for _ in range(plan.num_installments):
+        payment_dates.append(payment_date.strftime('%Y-%m-%d'))
+        payment_date += relativedelta(months=1)
+
+            # Calcula los montos de interés y capital
+        balance = plan.purchase_amount
+        total_abonos = 0
+        total_intereses = 0
+            
+    for i in range(plan.num_installments):
+        interest_amount = balance * (plan.interest_rate / 100 / 12)
+        capital_amount = monthly_payment - interest_amount
+        balance -= capital_amount
+        total_abonos += capital_amount
+        total_intereses += interest_amount
+        plan.append(plan.card_number)
+"""
+
+def calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day):
     try:
 
         cursor = ObtenerCursor()
@@ -273,7 +313,6 @@ def calculate_amortization_plan(card_number, purchase_amount, num_installments, 
                 insert_query = sql.SQL ("""
                     INSERT INTO payment_plan (card_number, purchase_date, payment_date, purchase_amount, payment_amount, interest_amount, capital_amount, balance)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (card_number, purchase_date) DO NOTHING
                     """)
                 
                 cursor.execute(insert_query, (card_number, purchase_date, payment_dates[i], purchase_amount, monthly_payment, interest_amount, capital_amount, balance))
@@ -289,6 +328,20 @@ def calculate_amortization_plan(card_number, purchase_amount, num_installments, 
         return "No se pudo guardar el plan de amortización"
 
 
+def insert_payment_plan(plan: PaymentPlan):
+    
+    cursor = ObtenerCursor()
+    cursor.execute(f"""
+            insert into payment_plan(
+              purchase_date, purchase_amount, payment_date, payment_amount, interest_amount, capital_amount, balance  
+            )
+            values(
+                '{plan.purchase_date}', '{plan.purchase_amount}', '{plan.payment_date}', '{plan.payment_amount}', '{plan.interest_amount}', 
+                '{plan.capital_amount}', '{plan.balance}'
+            );
+
+           """)
+    cursor.connection.commit()
     
 def get_monthly_payments_report(start_date: date, end_date: date):
     try:

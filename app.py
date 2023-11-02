@@ -5,7 +5,7 @@ from Card import CreditCard
 from CardController import register_credit_card, calculate_payment, make_purchase, calculate_amortization_plan
 import CardController
 import traceback
-from Card import CreditCard
+from Card import CreditCard, PaymentPlan
 
 app = Flask(__name__)     
 
@@ -16,9 +16,9 @@ def ObtenerCursor():
     connection = psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD, host=HOST, port=PORT)
     return connection.cursor()
 
-@app.route('/params')      
-def params():
-    return request.args
+@app.route("/")
+def Home():
+    return render_template("index.html")
 
 @app.route('/view/new-card')
 def VistaAgregarTajeta():
@@ -26,31 +26,29 @@ def VistaAgregarTajeta():
 
 @app.route("/view/save-card")
 def VistaGuardarTarjeta():
-    try:
-        
-        card_number = request.args["card_number"]
-        owner_id = request.args["owner_id"]
-        owner_name = request.args["owner_name"]
-        bank_name = request.args["bank_name"]
-        due_date = request.args["due_date"]
-        franchise = request.args["franchise"]
-        payment_day = int(request.args["payment_day"])
-        monthly_fee = float(request.args["monthly_fee"])
-        interest_rate = float(request.args["interest_rate"])
+    
+    card_number = request.args["card_number"]
+    owner_id = request.args["owner_id"]
+    owner_name = request.args["owner_name"]
+    bank_name = request.args["bank_name"]
+    due_date = request.args["due_date"]
+    franchise = request.args["franchise"]
+    payment_day = int(request.args["payment_day"])
+    monthly_fee = float(request.args["monthly_fee"])
+    interest_rate = float(request.args["interest_rate"])
 
-        new_card = CreditCard(card_number, owner_id,owner_name,bank_name,due_date,franchise,payment_day,monthly_fee,interest_rate)
-        CardController.register_credit_card( new_card) 
-        return f"La tarjeta {card_number} se ha agregado correctamente"
-        
-    
-    except Exception as e:
-        error_message = f"Error al agregar la tarjeta {card_number}: {str(e)}"
-        traceback.print_exc()  # Imprime la traza de la excepción para depuración
-        return error_message
-    
+    new_card = CreditCard(card_number, owner_id,owner_name,bank_name,due_date,franchise,payment_day,monthly_fee,interest_rate)
+    CardController.insert_card(new_card)
+    return f"La tarjeta {card_number} se ha agregado correctamente"
+       
+@app.route("/view/purchase")
+def VistaSimularCompra():
+    return render_template("purchase-simulate.html")
+
 
 @app.route("/view/purchase-simulate")
-def VistaSimularCompra():
+def SimularCompra():
+
     purchase_amount = float(request.args["purchase_amount"])
     card_number = request.args["card_number"]
     num_installments = int(request.args["num_installments"])
@@ -59,19 +57,45 @@ def VistaSimularCompra():
     cursor.execute(f"""select interest_rate from credit_card where card_number='{card_number}'""")
     interest_rate = float(cursor.fetchone()[0])
 
+    CardController.calculate_payment(purchase_amount, interest_rate, num_installments)
     compra = calculate_payment(purchase_amount, interest_rate, num_installments)
-    CardController.calculate_payment(compra)
-    return compra
+    return f"Total Intereses: {compra[0]} - Cuota: {compra[1]}"
 
+
+@app.route("/view/saving")
+def VistaAhorroProgramado():
+    return render_template("simulate-saving.html")
 
 @app.route("/view/simulate-saving")
-def VistaAhorroProgramado():
+def AhorroProgramado():
     purchase_amount = float(request.args["purchase_amount"])
     monthly_payment = float(request.args["monthly_payment"])
     interest_rate = float(request.args["interest_rate"])
 
     result = make_purchase(purchase_amount, interest_rate, monthly_payment)
     return (f"Número de meses ahorrando: {result}")
+
+@app.route("/view/plan")
+def VistaPlan():
+    return render_template("payment-register.html")
+
+@app.route("/view/payment-register")
+def PlanAmortizacion():
+    card_number = request.args["card_number"]
+    purchase_amount = request.args["purchase_amount"]
+    num_installments = int(request.args["num_installments"])
+    interest_rate = float(request.args["interest_rate"])
+    purchase_date = request.args["purchase_date"]
+    payment_day = int(request.args["payment_day"])
+
+    
+    
+    result = CardController.calculate_amortization_plan(card_number, purchase_amount,num_installments, interest_rate, purchase_date, payment_day)
+    result = PaymentPlan()
+    CardController.insert_payment_plan(result)
+    return "EL plan de amortización se generó con éxito"
+
+
 
 @app.route("/view/payment-sheduling")
 def VistaProgramacionPagos():

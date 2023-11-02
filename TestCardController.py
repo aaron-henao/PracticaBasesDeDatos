@@ -234,10 +234,10 @@ class TestCardController(unittest.TestCase):
         num_installments = 36
         interest_rate = 3.10
         purchase_date = "2023-09-22"
-       
+        payment_day = 10
         
         # Llama a la función para calcular el plan de amortización
-        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date)
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day)
         expected_result = "Cuota mensual = 9297.959116, Total Abonos = 334726.53, Total intereses = 134726.53"
 
         self.assertAlmostEqual(expected_result, "Cuota mensual = 9297.959116, Total Abonos = 334726.53, Total intereses = 134726.53")
@@ -248,10 +248,11 @@ class TestCardController(unittest.TestCase):
         num_installments = 24
         interest_rate = 3.40
         purchase_date = "2023-09-25"
+        payment_day = 16
         
         
         # Llama a la función para calcular el plan de amortización
-        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date)
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day)
         expected_result = "Cuota mensual = 52377.49864, Total Abonos = 1257059.96736, Total intereses = 407059.97"
 
         self.assertAlmostEqual(expected_result, "Cuota mensual = 52377.49864, Total Abonos = 1257059.96736, Total intereses = 407059.97")
@@ -262,9 +263,10 @@ class TestCardController(unittest.TestCase):
         num_installments = 48
         interest_rate = 0.00
         purchase_date = "2023-09-29"
+        payment_day = 5
         
         # Llama a la función para calcular el plan de amortización
-        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date)
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date,payment_day)
         expected_result = "Cuota mensual = 10000, Total Abonos = 480000.00, Total intereses = 0.00"
 
         self.assertAlmostEqual(expected_result, "Cuota mensual = 10000, Total Abonos = 480000.00, Total intereses = 0.00")
@@ -275,9 +277,10 @@ class TestCardController(unittest.TestCase):
         num_installments = 1
         interest_rate = 0.00
         purchase_date = "2023-11-17"
+        payment_day = 5
         
         # Llama a la función para calcular el plan de amortización
-        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date)
+        calculate_amortization_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date, payment_day)
         expected_result = "Cuota mensual = 10000, Total Abonos = 10000.00, Total intereses = 0.00"
 
         self.assertAlmostEqual(expected_result, "Cuota mensual = 10000, Total Abonos = 10000.00, Total intereses = 0.00")

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <h1>
+        Regitrar compra
+    </h1>
+        
+</head>
+
+<body>
+    <form action="/view/payment-register">
+        <div>
+            Número de tarjeta: <input type="text" name="card_number" />
+        </div>
+        <div>
+            Monto de la compra: <input type="number" name="purchase_amount" />
+        </div>
+        <div>
+            Número de cuotas: <input type="number" name="num_installments" />
+        </div>
+        <div>
+            Tasa de interes: <input type="number" step="any" name="interest_rate" />
+        </div>
+        <div>
+            Fecha de pago: <input type="date" name="purchase_date" />
+        </div>
+        <div>
+            Día de pago: <input type="number" name="payment_day" />
+        </div>
+        <input type="submit" step="any" value="Generar plan" />
+    </form>
+</body>
+
+</html>
