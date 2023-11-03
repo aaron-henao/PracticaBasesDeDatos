@@ -26,6 +26,8 @@ class ExcesiveInterestException( Exception ):
         """
         super().__init__( f"Invalid interest rate {interest_rate} maximun allowed is {MAX_INTEREST}" )
 
+    
+
 def ObtenerCursor() :
         """
         Creates the connection to the database and returns a cursor to execute instructions
@@ -39,7 +41,30 @@ def ObtenerCursor() :
         PORT = SecretConfig.PORT
         connection = psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD, host=HOST, port=PORT)
         return connection.cursor()
-  
+
+    try:
+         cursor = ObtenerCursor()
+         create_credit_card_table = sql.SQL(f"""create table  IF NOT EXISTS credit_card(
+        card_number VARCHAR(16),
+        owner_id VARCHAR(10),
+        owner_name VARCHAR(255),
+        bank_name VARCHAR(255),
+        due_date DATE,
+        franchise VARCHAR(255),
+        payment_day INTEGER,
+        monthly_fee FLOAT,
+         interest_rate FLOAT)""")
+
+         create_payment_plan = sql.SQL("""create table payment_plan(
+            card_number varchar(20) not null,
+            purchase_date date not null,
+            payment_date date not null,
+            purchase_amount float not null,
+            payment_amount float not null,
+            interest_amount float not null,
+            capital_amount float not null,
+            balance float not null) 
+                                        """)
         
     
 def create_tables():
