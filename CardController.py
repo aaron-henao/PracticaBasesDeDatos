@@ -1,7 +1,7 @@
 import psycopg2
 from datetime import date 
 from psycopg2 import sql
-from datetime import datetime, timedelta
+from datetime import datetime
 import SecretConfig
 from dateutil.relativedelta import relativedelta
 from Card import CreditCard
@@ -58,9 +58,11 @@ def create_tables():
     try:
          cursor.execute( sql )
          cursor.connection.commit()
+         return "Tablas creadas correctamente"
 
     except:
         cursor.connection.rollback
+        return "Las tablas ya existen"
 
 # Aplicación web
 def insert_card(card: CreditCard):

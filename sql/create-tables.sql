@@ -20,3 +20,4 @@ create table payment_plan (
     capital_amount float not null,
     balance float not null
 );
+
