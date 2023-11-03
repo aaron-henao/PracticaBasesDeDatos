@@ -42,18 +42,27 @@ def ObtenerCursor() :
         connection = psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD, host=HOST, port=PORT)
         return connection.cursor()
 
+
+    
+def create_tables():
+    """
+        Create the tables in the database
+            
+        Crea las tablas en la base de datos
+    """
+
     try:
          cursor = ObtenerCursor()
          create_credit_card_table = sql.SQL(f"""create table  IF NOT EXISTS credit_card(
-        card_number VARCHAR(16),
-        owner_id VARCHAR(10),
-        owner_name VARCHAR(255),
-        bank_name VARCHAR(255),
-        due_date DATE,
-        franchise VARCHAR(255),
-        payment_day INTEGER,
-        monthly_fee FLOAT,
-         interest_rate FLOAT)""")
+            card_number VARCHAR(16),
+            owner_id VARCHAR(10),
+            owner_name VARCHAR(255),
+            bank_name VARCHAR(255),
+            due_date DATE,
+            franchise VARCHAR(255),
+            payment_day INTEGER,
+            monthly_fee FLOAT,
+            interest_rate FLOAT)""")
 
          create_payment_plan = sql.SQL("""create table payment_plan(
             card_number varchar(20) not null,
@@ -65,29 +74,20 @@ def ObtenerCursor() :
             capital_amount float not null,
             balance float not null) 
                                         """)
-        
-    
-def create_tables():
-    """
-        Create the tables in the database
-            
-        Crea las tablas en la base de datos
-    """
-    sql = ""
-    with open("sql/create-tables.sql","r") as f:
-        sql = f.read()
-
-    cursor = ObtenerCursor()
-
-
-    try:
-         cursor.execute( sql )
+         
+         cursor.execute(create_credit_card_table)
+         cursor.execute(create_payment_plan)
          cursor.connection.commit()
-         return "Tablas creadas correctamente"
+         cursor.close()
+         cursor.connection.close()
+
+         return "Tablas creadas exitosamente - Successfully created tables"
+    except Exception as e:
+         return str(e)
 
     except:
-        cursor.connection.rollback
-        return "Las tablas ya existen"
+        
+        return "Tablas creadas"
 
 # Aplicación web
 def insert_card(card: CreditCard):
