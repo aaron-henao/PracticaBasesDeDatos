@@ -2,10 +2,10 @@ from flask import Flask, request, jsonify, render_template
 from SecretConfig import DATABASE, USER, PASSWORD, HOST, PORT
 import psycopg2
 from Card import CreditCard
-from CardController import register_credit_card, calculate_payment, make_purchase, calculate_amortization_plan
+from CardController import calculate_payment, make_purchase, calculate_amortization_plan, calculate_plan, get_monthly_payments_reports
 import CardController
-import traceback
-from Card import CreditCard, PaymentPlan
+from Card import CreditCard
+from datetime import datetime
 
 app = Flask(__name__)     
 
@@ -82,27 +82,30 @@ def VistaPlan():
 @app.route("/view/payment-register")
 def PlanAmortizacion():
     card_number = request.args["card_number"]
-    purchase_amount = request.args["purchase_amount"]
+    purchase_amount = float(request.args["purchase_amount"])
     num_installments = int(request.args["num_installments"])
     interest_rate = float(request.args["interest_rate"])
     purchase_date = request.args["purchase_date"]
-    payment_day = int(request.args["payment_day"])
 
-    
-    
-    result = CardController.calculate_amortization_plan(card_number, purchase_amount,num_installments, interest_rate, purchase_date, payment_day)
-    result = PaymentPlan()
-    CardController.insert_payment_plan(result)
-    return "EL plan de amortización se generó con éxito"
+    result = calculate_plan(card_number, purchase_amount, num_installments, interest_rate, purchase_date)
+    CardController.insert_plan(result)
+    return "El plan de amortización se almacenó con éxito"
 
 
+@app.route("/view/payment")
+def VerPago():
+    return render_template("payment-sheduling.html")
 
 @app.route("/view/payment-sheduling")
 def VistaProgramacionPagos():
-    start_date = request.args[start_date]
-    end_date = request.args[end_date]
+    start_date = request.args["start_date"]
+    end_date= request.args["end_date"]
+    owner_id = request.args["owner_id"]
 
-    total_monthly_payments = CardController.get_monthly_payments_report(start_date, end_date)
+
+    result = get_monthly_payments_reports(start_date, end_date, owner_id)
+    return result
+
 
 
 

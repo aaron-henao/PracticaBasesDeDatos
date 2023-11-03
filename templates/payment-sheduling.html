@@ -3,23 +3,23 @@
 
 <head>
     <h1>
-        Simular una compra
+        Programación de pagos
     </h1>
         
 </head>
 
 <body>
-    <form action="/view/purchase-simulate">
+    <form action="/view/payment-sheduling">
         <div>
-            Monto de la compra: <input type="number" name="purchase_amount" />
+            Número de cédula: <input type="number" name="owner_id" />
         </div>
         <div>
-            Número de tarjeta: <input type="text" name="card_number" />
+            Fecha Inicio: <input type="date" name="start_date" />
         </div>
         <div>
-            Número de cuotas: <input type="number" name="num_installments" />
+            Fecha Final: <input type="date" name="end_date" />
         </div>
-        <input type="submit" step="any" value="Simular Compra" />
+        <input type="submit" step="any" value="Ver programación" />
     </form>
 </body>
 
