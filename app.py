@@ -118,6 +118,6 @@ def VistaElminiarTarjeta():
     return f"Tarjeta {card_number} eliminada con éxito"
 
 if __name__=='__main__':
-   CardController.create_tables
+   CardController.create_tables()
    app.run(debug=True) 
     
