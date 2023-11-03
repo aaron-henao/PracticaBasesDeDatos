@@ -78,6 +78,20 @@ def insert_card(card: CreditCard):
                     """)
     cursor.connection.commit()
 
+
+def delete_card(card_number):
+    
+    cursor = ObtenerCursor()
+    cursor.execute(f"""
+            delete from credit_card where card_number = '{card_number}'
+        """)
+    cursor.execute(f"""
+            delete from payment_plan where card_number = '{card_number}'
+        """)
+    cursor.connection.commit()
+    cursor.close()
+
+
 #Caso de prueba                
 def register_credit_card(card: CreditCard):
     """
