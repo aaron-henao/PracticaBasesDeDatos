@@ -13,7 +13,8 @@ Crear una aplicación web que permita al usuario:
 Para instalar:
 
 1. Insertar datos de la base de datos en el archivo SecretConfig-sample.py y renombrarlo como SecretConfig.py
-2. Ejecutar CardController para crear las tablas credit_card y payment_plan en su base de datos
+2. Instalar la libreria dateutil 'pip install python-dateutil'
+3. Ejecutar CardController para crear las tablas credit_card y payment_plan en su base de datos
 
 Para ejecutar:
 
