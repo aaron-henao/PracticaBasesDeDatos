@@ -21,4 +21,5 @@ Para ejecutar:
 
 1. Instalar Flask 'pip install Flask'
 2. Ejecutar archivo app.py
-3. Accede a la app desde tu navegador: 'http://localhost:5000'
+3. Accede a la app desde tu navegador: 'http://localhost:5000' o con la dirección de tu servidor local.
+4. Accede al menú principal de la app añadiendo a la dirección de tu servidor local '/'
